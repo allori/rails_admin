@@ -4,6 +4,9 @@ require 'csv'
 module RailsAdmin
   class CSVConverter
     def initialize(objects = [], schema = {})
+      @fields = []
+      @associations = []
+
       return self if (@objects = objects).blank?
 
       @model = objects.dup.first.class
@@ -32,6 +35,13 @@ module RailsAdmin
     end
 
     def to_csv(options = {})
+      if CSV::VERSION == '3.0.2'
+        raise <<-MSG.gsub(/^\s+/, '')
+          CSV library bundled with Ruby 2.6.0 has encoding issue, please upgrade Ruby to 2.6.1 or later.
+          https://github.com/ruby/csv/issues/62
+        MSG
+      end
+      options = HashWithIndifferentAccess.new(options)
       encoding_to = Encoding.find(options[:encoding_to]) if options[:encoding_to].present?
 
       csv_string = generate_csv_string(options)

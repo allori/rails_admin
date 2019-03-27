@@ -70,6 +70,23 @@ $(document).on 'rails_admin.dom_ready', (e, content) ->
       else
         image_container.hide()
 
+    # multiple-fileupload-preview
+
+    content.find('[data-multiple-fileupload]').change ->
+      input = this
+      $("#" + input.id).parent().children(".preview").remove()
+      for file in input.files
+        ext = file.name.split('.').pop().toLowerCase()
+        if $.inArray(ext, ['gif','png','jpg','jpeg','bmp']) == -1
+          continue
+        image_container = $('<img />').addClass('preview').addClass('img-thumbnail')
+        do (image_container) ->
+          reader = new FileReader()
+          reader.onload = (e) ->
+            image_container.attr "src", e.target.result
+          reader.readAsDataURL file
+          $("#" + input.id).parent().append($('<div></div>').addClass('preview').append(image_container))
+
     # filtering-multiselect
 
     content.find('[data-filteringmultiselect]').each ->
@@ -171,6 +188,31 @@ $(document).on 'rails_admin.dom_ready', (e, content) ->
                 html = html.add(option)
               object_select.html(html)
 
+
+    # simplemde
+
+    goSimpleMDEs = ->
+      content.find('[data-richtext=simplemde]').not('.simplemded').each (index, domEle) ->
+        options = $(this).data('options')
+        instance_config = options.instance_config
+        new window.SimpleMDE($.extend(true, {
+          element: document.getElementById(this.id),
+          autosave: {
+            uniqueId: this.id
+          }
+        }, instance_config))
+        $(this).addClass('simplemded')
+
+    $editors = content.find('[data-richtext=simplemde]').not('.simplemded')
+    if $editors.length
+      if not window.SimpleMDE
+        options = $editors.first().data('options')
+        $('head').append('<link href="' + options['css_location'] + '" rel="stylesheet" media="all" type="text\/css">')
+        $.getScript options['js_location'], (script, textStatus, jqXHR) ->
+          goSimpleMDEs()
+      else
+        goSimpleMDEs()
+
     # ckeditor
 
     goCkeditors = ->
@@ -198,6 +240,7 @@ $(document).on 'rails_admin.dom_ready', (e, content) ->
         options = $(this).data('options')
         textarea = this
         $.getScript options['locations']['mode'], (script, textStatus, jqXHR) ->
+          options = $(domEle).data('options')
           $('head').append('<link href="' + options['locations']['theme'] + '" rel="stylesheet" media="all" type="text\/css">')
           CodeMirror.fromTextArea(textarea,options['options'])
           $(textarea).addClass('codemirrored')
